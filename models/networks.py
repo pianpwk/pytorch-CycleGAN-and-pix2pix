@@ -202,6 +202,13 @@ def define_D(input_nc, ndf, netD, n_layers_D=3, norm='batch', init_type='normal'
         raise NotImplementedError('Discriminator model name [%s] is not recognized' % netD)
     return init_net(net, init_type, init_gain, gpu_ids)
 
+def define_C(output_nc, ndf, ncl, init_type='normal', gpu_ids=[]):
+    #if output_nc == 3:
+    #    netC = get_model('DTN', num_cls=10)
+    #else:
+    #    Exception('classifier only implemented for 32x32x3 images')
+    netC = Classifier(output_nc, ndf, ncl)
+    return init_net(netC, init_type, gpu_ids)
 
 ##############################################################################
 # Classes
@@ -613,3 +620,42 @@ class PixelDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.net(input)
+
+class Classifier(nn.Module):
+    def __init__(self, input_nc, ndf, ncl, norm_layer=nn.BatchNorm2d):
+        super(Classifier, self).__init__()
+
+        kw = 3
+        sequence = [
+            nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(3):
+            nf_mult_prev = nf_mult
+            nf_mult = min(2**n, 8)
+            sequence += [
+                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
+                          kernel_size=kw, stride=2),
+                norm_layer(ndf * nf_mult, affine=True),
+                nn.LeakyReLU(0.2, True)
+            ]
+        self.before_linear = nn.Sequential(*sequence)
+        
+        sequence = [
+            nn.Linear(ndf * nf_mult, 1024),
+            nn.Linear(1024, ncl)
+        ]
+
+        self.after_linear = nn.Sequential(*sequence)
+    
+    def forward(self, x):
+        bs = x.size(0)
+        out = self.before_linear(x)
+        if len(out.shape) == 4:
+            out = torch.mean(out,dim=-1).unsqueeze(-1)
+            out = torch.mean(out,dim=-2).unsqueeze(-2)
+        out = self.after_linear(out.view(bs,-1))
+        return out
