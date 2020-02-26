@@ -12,7 +12,6 @@ class CycleGAN225Model(BaseModel):
     def name(self):
         return 'CycleGAN 2_25 model'
 
-    @staticmethod
     def modify_commandline_options(parser, is_train=True):
         parser.set_defaults(no_dropout=True)  # default CycleGAN did not use dropout
         if is_train:
@@ -21,7 +20,6 @@ class CycleGAN225Model(BaseModel):
             parser.add_argument('--dltk_CLS', type=str, default=None, help='folder for dltk classification model', required=True)
             parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)')
 
-    @staticmethod
     def load_single_network(net, pth):
         state_dict = torch.load(pth, map_location=str(self.device))
         if hasattr(state_dict, '_metadata'):
