@@ -59,7 +59,7 @@ class CycleGAN225Model(BaseModel):
                                     not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
         if self.isTrain:
             self.netD = networks.define_D(output_nc, opt.ndf, opt.netD,
-                                    opt.n_layers_D, opt.norm. opt.init_type, opt.init_gain, self.gpu_ids)
+                                    opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
 
         if self.isTrain:
             self.fake_pool = ImagePool(opt.pool_size)
