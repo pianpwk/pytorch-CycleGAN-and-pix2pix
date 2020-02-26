@@ -154,7 +154,7 @@ class CycleGANModelSupervised(BaseModel):
         self.loss_CL += 0.5*self.criterionCLS(self.pred_Bsupreal, label_Bsup)
         self.loss_CL.backward()
 
-    def optimizer_parameters(self):
+    def optimize_parameters(self):
         # forward
         self.forward()
         # G_A and G_B
