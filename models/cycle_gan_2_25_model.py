@@ -6,16 +6,7 @@ from . import networks
 from torch.autograd import Variable
 import numpy as np
 # from .dltk_model import parse_dltk_model
-
-def load_single_network(net, pth):
-        state_dict = torch.load(pth, map_location=str(self.device))
-        if hasattr(state_dict, '_metadata'):
-            del state_dict._metadata
-        # patch InstanceNorm checkpoints prior to 0.4
-        for key in list(state_dict.keys()):
-            self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-        net.load_state_dict(state_dict)
-        return net
+import os
 
 class CycleGAN225Model(BaseModel):
 
@@ -28,17 +19,27 @@ class CycleGAN225Model(BaseModel):
             parser.add_argument('--init_D', type=str, default=None, help='initialization for netD')
             parser.add_argument('--init_G', type=str, default=None, help='initialization for netG')
             parser.add_argument('--dltk_CLS', type=str, default=None, help='folder for dltk classification model', required=True)
-            parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)')    
+            parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)') 
+
+    def load_single_network(self, net, pth):
+        state_dict = torch.load(pth, map_location=str(self.device))
+        if hasattr(state_dict, '_metadata'):
+            del state_dict._metadata
+        # patch InstanceNorm checkpoints prior to 0.4
+        for key in list(state_dict.keys()):
+            self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
+        net.load_state_dict(state_dict)
+        return net   
 
     def setup(self, opt):
         super(CycleGAN225Model, self).setup(opt)
         if self.isTrain:
             if not opt.init_D is None:
                 print('initializing discriminator network from %s' % opt.init_D)
-                self.netD = load_single_network(self.netD, opt.init_D)
+                self.netD = self.load_single_network(self.netD, opt.init_D)
             if not opt.init_G is None:
                 print('initializing generator network from %s' % opt.init_G)
-                self.netG = load_single_network(self.netG, opt.init_G)
+                self.netG = self.load_single_network(self.netG, opt.init_G)
             print('initializing classification network from %s' % opt.dltk_CLS)
 
     def __init__(self, opt):
