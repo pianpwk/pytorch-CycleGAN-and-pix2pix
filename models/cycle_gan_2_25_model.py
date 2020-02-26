@@ -37,9 +37,11 @@ class CycleGAN225Model(BaseModel):
             if not opt.init_D is None:
                 print('initializing discriminator network from %s' % opt.init_D)
                 self.netD = self.load_single_network(self.netD, opt.init_D)
+                self.netD = torch.nn.DataParallel(self.netD)
             if not opt.init_G is None:
                 print('initializing generator network from %s' % opt.init_G)
                 self.netG = self.load_single_network(self.netG, opt.init_G)
+                self.netG = torch.nn.DataParallel(self.netG)
             print('initializing classification network from %s' % opt.dltk_CLS)
 
     def __init__(self, opt):
