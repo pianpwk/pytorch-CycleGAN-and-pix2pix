@@ -37,11 +37,9 @@ class CycleGAN225Model(BaseModel):
             if not opt.init_D is None:
                 print('initializing discriminator network from %s' % opt.init_D)
                 self.netD = self.load_single_network(self.netD, opt.init_D)
-                self.netD = torch.nn.DataParallel(self.netD)
             if not opt.init_G is None:
                 print('initializing generator network from %s' % opt.init_G)
                 self.netG = self.load_single_network(self.netG, opt.init_G)
-                self.netG = torch.nn.DataParallel(self.netG)
             print('initializing classification network from %s' % opt.dltk_CLS)
 
     def __init__(self, opt):
@@ -58,9 +56,11 @@ class CycleGAN225Model(BaseModel):
         input_nc,output_nc = (opt.input_nc,opt.output_nc) if self.AtoB else (opt.output_nc,opt.input_nc)
         self.netG = networks.define_G(input_nc, output_nc, opt.ngf, opt.netG, opt.norm,
                                     not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        self.netG = torch.nn.DataParallel(self.netG)
         if self.isTrain:
             self.netD = networks.define_D(output_nc, opt.ndf, opt.netD,
                                     opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
+            self.netD = torch.nn.DataParallel(self.netD)
             # self.netCLS = parse_dltk_model(opt.dltk_CLS)
             self.netCLS = torch.load(os.path.join(opt.dltk_CLS, 'model'))
 
