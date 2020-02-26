@@ -40,8 +40,6 @@ class CycleGAN225Model(BaseModel):
                 print('initializing generator network from %s' % opt.init_G)
                 self.netG = load_single_network(self.netG, opt.init_G)
             print('initializing classification network from %s' % opt.dltk_CLS)
-            # self.netCLS = parse_dltk_model(opt.dltk_CLS)
-            self.netCLS = torch.load(os.path.join(opt.dltk_CLS, 'model'))
 
     def __init__(self, opt):
 
@@ -60,6 +58,8 @@ class CycleGAN225Model(BaseModel):
         if self.isTrain:
             self.netD = networks.define_D(output_nc, opt.ndf, opt.netD,
                                     opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
+            # self.netCLS = parse_dltk_model(opt.dltk_CLS)
+            self.netCLS = torch.load(os.path.join(opt.dltk_CLS, 'model'))
 
         if self.isTrain:
             self.fake_pool = ImagePool(opt.pool_size)
