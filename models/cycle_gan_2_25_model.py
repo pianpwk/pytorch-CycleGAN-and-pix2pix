@@ -52,7 +52,7 @@ class CycleGAN225Model(BaseModel):
             self.model_names = ['G', 'D', 'CLS']
         else:
             self.model_names = ['G']
-        self.AtoB = opt.which_direction == 'AtoB'
+        self.AtoB = opt.direction == 'AtoB'
 
         input_nc,output_nc = opt.input_nc,opt.output_nc if self.AtoB else opt.output_nc,opt.input_nc
         self.netG = networks.define_G(input_nc, output_nc, opt.ngf, opt.netG, opt.norm,
