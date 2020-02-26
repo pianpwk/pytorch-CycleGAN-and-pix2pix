@@ -7,6 +7,16 @@ from torch.autograd import Variable
 import numpy as np
 # from .dltk_model import parse_dltk_model
 
+def load_single_network(net, pth):
+        state_dict = torch.load(pth, map_location=str(self.device))
+        if hasattr(state_dict, '_metadata'):
+            del state_dict._metadata
+        # patch InstanceNorm checkpoints prior to 0.4
+        for key in list(state_dict.keys()):
+            self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
+        net.load_state_dict(state_dict)
+        return net
+
 class CycleGAN225Model(BaseModel):
 
     def name(self):
@@ -18,17 +28,7 @@ class CycleGAN225Model(BaseModel):
             parser.add_argument('--init_D', type=str, default=None, help='initialization for netD')
             parser.add_argument('--init_G', type=str, default=None, help='initialization for netG')
             parser.add_argument('--dltk_CLS', type=str, default=None, help='folder for dltk classification model', required=True)
-            parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)')
-
-    def load_single_network(net, pth):
-        state_dict = torch.load(pth, map_location=str(self.device))
-        if hasattr(state_dict, '_metadata'):
-            del state_dict._metadata
-        # patch InstanceNorm checkpoints prior to 0.4
-        for key in list(state_dict.keys()):
-            self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-        net.load_state_dict(state_dict)
-        return net
+            parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)')    
 
     def setup(self, opt):
         super(CycleGAN225Model, self).setup(opt)
