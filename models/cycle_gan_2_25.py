@@ -12,76 +12,76 @@ class CycleGAN225Model(BaseModel):
     def name(self):
         return 'CycleGAN 2_25 model'
 
-	@staticmethod
-	def modify_commandline_options(parser, is_train=True):
-		parser.set_defaults(no_dropout=True)  # default CycleGAN did not use dropout
+    @staticmethod
+    def modify_commandline_options(parser, is_train=True):
+        parser.set_defaults(no_dropout=True)  # default CycleGAN did not use dropout
         if is_train:
-        	parser.add_argument('--init_D', type=str, default=None, help='initialization for netD')
-        	parser.add_argument('--init_G', type=str, default=None, help='initialization for netG')
+            parser.add_argument('--init_D', type=str, default=None, help='initialization for netD')
+            parser.add_argument('--init_G', type=str, default=None, help='initialization for netG')
             parser.add_argument('--dltk_CLS', type=str, default=None, help='folder for dltk classification model', required=True)
             parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)')
 
-	@staticmethod
+    @staticmethod
     def load_single_network(net, pth):
-    	state_dict = torch.load(pth, map_location=str(self.device))
-    	if hasattr(state_dict, '_metadata'):
-    		del state_dict._metadata
-		# patch InstanceNorm checkpoints prior to 0.4
-		for key in list(state_dict.keys()):
-			self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-		net.load_state_dict(state_dict)
-		return net
+        state_dict = torch.load(pth, map_location=str(self.device))
+        if hasattr(state_dict, '_metadata'):
+            del state_dict._metadata
+        # patch InstanceNorm checkpoints prior to 0.4
+        for key in list(state_dict.keys()):
+            self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
+        net.load_state_dict(state_dict)
+        return net
 
     def setup(self, opt):
-    	super(CycleGAN225Model, self).setup(opt)
-    	if self.isTrain:
-    		if not opt.init_D is None:
-    			print('initializing discriminator network from %s' % opt.init_D)
-    			self.netD = load_single_network(self.netD, opt.init_D)
-			if not opt.init_G is None:
-				print('initializing generator network from %s' % opt.init_G)
-				self.netG = load_single_network(self.netG, opt.init_G)
+        super(CycleGAN225Model, self).setup(opt)
+        if self.isTrain:
+            if not opt.init_D is None:
+                print('initializing discriminator network from %s' % opt.init_D)
+                self.netD = load_single_network(self.netD, opt.init_D)
+            if not opt.init_G is None:
+                print('initializing generator network from %s' % opt.init_G)
+                self.netG = load_single_network(self.netG, opt.init_G)
             print('initializing classification network from %s' % opt.dltk_CLS)
             self.netCLS = parse_dltk_model(opt.dltk_CLS)
 
-	def __init__(self, opt):
+    def __init__(self, opt):
 
         BaseModel.__init__(self, opt)
         self.loss_names = ['D', 'G', 'sem']
         self.visual_names = ['real_A', 'fake_B']
         if self.isTrain:
-        	self.model_names = ['G', 'D', 'CLS']
+            self.model_names = ['G', 'D', 'CLS']
         else:
-        	self.model_names = ['G']
+            self.model_names = ['G']
         self.AtoB = opt.which_direction == 'AtoB'
 
         input_nc,output_nc = opt.input_nc,opt.output_nc if self.AtoB else opt.output_nc,opt.input_nc
         self.netG = networks.define_G(input_nc, output_nc, opt.ngf, opt.netG, opt.norm,
-        							not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-		if self.isTrain:
-			self.netD = networks.define_D(output_nc, opt.ndf, opt.netD,
-									opt.n_layers_D, opt.norm. opt.init_type, opt.init_gain, self.gpu_ids)
+                                    not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+        if self.isTrain:
+            self.netD = networks.define_D(output_nc, opt.ndf, opt.netD,
+                                    opt.n_layers_D, opt.norm. opt.init_type, opt.init_gain, self.gpu_ids)
 
-		if self.isTrain:
-			self.fake_pool = ImagePool(opt.pool_size)
-			self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
-			self.criterionSEM = torch.nn.KLDivLoss().to(self.device)
-			self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-			self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-			self.optimizers.append(self.optimizer_G)
-			self.optimizers.append(self.optimizer_D)
+        if self.isTrain:
+            self.fake_pool = ImagePool(opt.pool_size)
+            self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
+            self.criterionSEM = torch.nn.KLDivLoss().to(self.device)
+            self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizers.append(self.optimizer_G)
+            self.optimizers.append(self.optimizer_D)
 
-	def set_input(self, input):
+    def set_input(self, input):
 
-		self.real_A = input['A' if self.AtoB else 'B'].to(self.device)
-		self.real_B = input['B' if self.AtoB else 'B'].to(self.device)
+        self.real_A = input['A' if self.AtoB else 'B'].to(self.device)
+        self.real_B = input['B' if self.AtoB else 'B'].to(self.device)
         self.image_paths = input['A_paths' if self.AtoB else 'B_paths']
 
     def forward(self):
-    	self.fake_B = self.netG(self.real_A)
-    	if self.isTrain:
-    		self.pred_real_A = self.netCLS(self.real_A)
-    		self.pred_fake_B = self.netCLS(self.fake_B)
+        self.fake_B = self.netG(self.real_A)
+        if self.isTrain:
+            self.pred_real_A = self.netCLS(self.real_A)
+            self.pred_fake_B = self.netCLS(self.fake_B)
 
     def backward_D_basic(self, netD, real, fake):
         # Real
@@ -97,16 +97,16 @@ class CycleGAN225Model(BaseModel):
         return loss_D
 
     def backward_D(self):
-    	fake_B = self.fakepool.query(self.fake_B)
-    	self.loss_D = self.backward_D_basic(self.netD, self.real_B, fake_B)
+        fake_B = self.fakepool.query(self.fake_B)
+        self.loss_D = self.backward_D_basic(self.netD, self.real_B, fake_B)
 
-   	def backward_G(self):
-   		self.loss_G = self.criterionGAN(self.netD(self.fake_B), True)
-   		self.loss_sem = self.criterionCLS(self.pred_real_A, self.pred_fake_B)
-   		self.loss_G = self.loss_G + args.lambda_CLS*self.loss_sem
-   		self.loss_G.backward()
+    def backward_G(self):
+        self.loss_G = self.criterionGAN(self.netD(self.fake_B), True)
+        self.loss_sem = self.criterionCLS(self.pred_real_A, self.pred_fake_B)
+        self.loss_G = self.loss_G + args.lambda_CLS*self.loss_sem
+        self.loss_G.backward()
 
-	def optimize_parameters(self):
+    def optimize_parameters(self):
         # forward
         self.forward()
         # G
