@@ -5,7 +5,7 @@ from .base_model import BaseModel
 from . import networks
 from torch.autograd import Variable
 import numpy as np
-from dltk_model import parse_dltk_model
+# from .dltk_model import parse_dltk_model
 
 class CycleGAN225Model(BaseModel):
 
@@ -40,7 +40,8 @@ class CycleGAN225Model(BaseModel):
                 print('initializing generator network from %s' % opt.init_G)
                 self.netG = load_single_network(self.netG, opt.init_G)
             print('initializing classification network from %s' % opt.dltk_CLS)
-            self.netCLS = parse_dltk_model(opt.dltk_CLS)
+            # self.netCLS = parse_dltk_model(opt.dltk_CLS)
+            self.netCLS = torch.load(os.path.join(opt.dltk_CLS, 'model'))
 
     def __init__(self, opt):
 
