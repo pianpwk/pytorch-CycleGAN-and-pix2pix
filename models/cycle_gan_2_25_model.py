@@ -28,7 +28,7 @@ class CycleGAN225Model(BaseModel):
         # patch InstanceNorm checkpoints prior to 0.4
         # for key in list(state_dict.keys()):
             # self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-        net.load_state_dict(state_dict)
+        net.model.load_state_dict(state_dict)
         return net   
 
     def setup(self, opt):
@@ -56,11 +56,11 @@ class CycleGAN225Model(BaseModel):
         input_nc,output_nc = (opt.input_nc,opt.output_nc) if self.AtoB else (opt.output_nc,opt.input_nc)
         self.netG = networks.define_G(input_nc, output_nc, opt.ngf, opt.netG, opt.norm,
                                     not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
-        self.netG = torch.nn.DataParallel(self.netG)
+        # self.netG = torch.nn.DataParallel(self.netG)
         if self.isTrain:
             self.netD = networks.define_D(output_nc, opt.ndf, opt.netD,
                                     opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
-            self.netD = torch.nn.DataParallel(self.netD)
+            # self.netD = torch.nn.DataParallel(self.netD)
             # self.netCLS = parse_dltk_model(opt.dltk_CLS)
             self.netCLS = torch.load(os.path.join(opt.dltk_CLS, 'model'))
 
