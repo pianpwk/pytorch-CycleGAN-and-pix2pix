@@ -14,6 +14,7 @@ from dltk.backend import get_augmenter
 
 import yaml
 import json
+import itertools
 
 class DLTKModel(nn.Module):
 
