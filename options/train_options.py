@@ -34,4 +34,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--init_G', type=str, default=None, help='initialization for netG')
         parser.add_argument('--dltk_CLS', type=str, default=None, help='folder for dltk classification model')
         parser.add_argument('--lambda_CLS', type=float, default=0.1, help='weight for classification loss (KL-divergence)')
+        parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')
+        parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')
+        parser.add_argument('--lambda_identity', type=float, default=0.5, help='')
         self.isTrain = True
