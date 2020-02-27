@@ -1,5 +1,7 @@
 import os
 os.environ['DLTK_BACKEND'] = 'pytorch'
+import sys
+sys.path.insert(0, '/mnt/ssfs/usr/pian.pawakapan/dltk')
 
 import torch
 from torch import nn
@@ -21,7 +23,7 @@ def parse_dltk_model(pth):
     taxonomy = load_taxonomy_grpc(taxonomy_pth)
     taxonomy = Taxonomy('', taxonomy)
 
-    dltk_model = get_model('classification', taxonomy=taxonomy, model_config=model_config, gpus[-1])
+    dltk_model = get_model('classification', taxonomy=taxonomy, model_config=model_config, gpus=[-1])
     torch.manual_seed(0)
 
     sd = torch.load(model_pth)

@@ -28,7 +28,7 @@ class CycleGAN225Model(BaseModel):
         # patch InstanceNorm checkpoints prior to 0.4
         # for key in list(state_dict.keys()):
             # self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-        net.model.load_state_dict(state_dict)
+        net.module.load_state_dict(state_dict)
         return net   
 
     def setup(self, opt):
@@ -36,10 +36,10 @@ class CycleGAN225Model(BaseModel):
         if self.isTrain:
             if not opt.init_D is None:
                 print('initializing discriminator network from %s' % opt.init_D)
-                self.netD = self.load_single_network(self.netD, opt.init_D)
+                self.netD = self.load_single_network(self.netD, opt.init_D).cuda()
             if not opt.init_G is None:
                 print('initializing generator network from %s' % opt.init_G)
-                self.netG = self.load_single_network(self.netG, opt.init_G)
+                self.netG = self.load_single_network(self.netG, opt.init_G).cuda()
             print('initializing classification network from %s' % opt.dltk_CLS)
 
     def __init__(self, opt):
@@ -52,6 +52,7 @@ class CycleGAN225Model(BaseModel):
         else:
             self.model_names = ['G']
         self.AtoB = opt.direction == 'AtoB'
+        self.lambda_CLS = opt.lambda_CLS
 
         input_nc,output_nc = (opt.input_nc,opt.output_nc) if self.AtoB else (opt.output_nc,opt.input_nc)
         self.netG = networks.define_G(input_nc, output_nc, opt.ngf, opt.netG, opt.norm,
@@ -62,12 +63,12 @@ class CycleGAN225Model(BaseModel):
                                     opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             # self.netD = torch.nn.DataParallel(self.netD)
             # self.netCLS = parse_dltk_model(opt.dltk_CLS)
-            self.netCLS = torch.load(os.path.join(opt.dltk_CLS, 'model'))
+            self.netCLS = torch.nn.DataParallel(torch.load(os.path.join(opt.dltk_CLS, 'model'))).cuda()
 
         if self.isTrain:
             self.fake_pool = ImagePool(opt.pool_size)
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
-            self.criterionSEM = torch.nn.KLDivLoss().to(self.device)
+            self.criterionCLS = torch.nn.KLDivLoss().to(self.device)
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
@@ -99,13 +100,16 @@ class CycleGAN225Model(BaseModel):
         return loss_D
 
     def backward_D(self):
-        fake_B = self.fakepool.query(self.fake_B)
+        fake_B = self.fake_pool.query(self.fake_B)
         self.loss_D = self.backward_D_basic(self.netD, self.real_B, fake_B)
 
     def backward_G(self):
         self.loss_G = self.criterionGAN(self.netD(self.fake_B), True)
-        self.loss_sem = self.criterionCLS(self.pred_real_A, self.pred_fake_B)
-        self.loss_G = self.loss_G + args.lambda_CLS*self.loss_sem
+        self.loss_sem = 0.0
+        for prA,pfB in zip(self.pred_real_A, self.pred_fake_B):
+            self.loss_sem += self.criterionCLS(prA.log(), pfB)
+        self.loss_sem /= len(self.pred_real_A)
+        self.loss_G = self.loss_G + self.lambda_CLS*self.loss_sem
         self.loss_G.backward()
 
     def optimize_parameters(self):
