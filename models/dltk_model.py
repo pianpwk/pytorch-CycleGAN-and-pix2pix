@@ -22,6 +22,7 @@ class DLTKModel(nn.Module):
         super(DLTKModel, self).__init__()
         self.model = torch.load(os.path.join(folder_pth, 'model')).cuda()
         self.normalize = self.get_normalization(os.path.join(folder_pth, 'complete_config.json'))
+        self.upsample = nn.Upsample(scale_factor=320.0/256)
 
     def get_normalization(self, json_fn): # only supports
         j = json.load(open(json_fn, 'r'))
@@ -41,6 +42,8 @@ class DLTKModel(nn.Module):
         x = (x*norm)+norm
         x = (x-self.normalize['mean'])/self.normalize['std']
         x = torch.clamp(x, max=self.normalize['max_pixel_value'])
+        # x = self.upsample(x)
+        # print(x.shape)
         
         # input into model
         return self.model(x)
