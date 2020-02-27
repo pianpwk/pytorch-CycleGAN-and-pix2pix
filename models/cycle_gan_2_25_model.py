@@ -5,7 +5,7 @@ from .base_model import BaseModel
 from . import networks
 from torch.autograd import Variable
 import numpy as np
-# from .dltk_model import parse_dltk_model
+from .dltk_model import DLTKModel
 import os
 
 class CycleGAN225Model(BaseModel):
@@ -40,7 +40,6 @@ class CycleGAN225Model(BaseModel):
             if not opt.init_G is None:
                 print('initializing generator network from %s' % opt.init_G)
                 self.netG = self.load_single_network(self.netG, opt.init_G).cuda()
-            print('initializing classification network from %s' % opt.dltk_CLS)
 
     def __init__(self, opt):
 
@@ -63,7 +62,8 @@ class CycleGAN225Model(BaseModel):
                                     opt.n_layers_D, opt.norm, opt.init_type, opt.init_gain, self.gpu_ids)
             # self.netD = torch.nn.DataParallel(self.netD)
             # self.netCLS = parse_dltk_model(opt.dltk_CLS)
-            self.netCLS = torch.nn.DataParallel(torch.load(os.path.join(opt.dltk_CLS, 'model'))).cuda()
+            print('initializing classification network from %s' % opt.dltk_CLS)
+            self.netCLS = torch.nn.DataParallel(DLTKModel(opt.dltk_CLS)).cuda()
 
         if self.isTrain:
             self.fake_pool = ImagePool(opt.pool_size)
