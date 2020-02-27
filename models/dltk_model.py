@@ -42,8 +42,7 @@ class DLTKModel(nn.Module):
         x = (x*norm)+norm
         x = (x-self.normalize['mean'])/self.normalize['std']
         x = torch.clamp(x, max=self.normalize['max_pixel_value'])
-        # x = self.upsample(x)
-        # print(x.shape)
+        x = self.upsample(x)
         
         # input into model
         return self.model(x)

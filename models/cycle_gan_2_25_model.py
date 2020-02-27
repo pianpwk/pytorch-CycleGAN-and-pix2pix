@@ -126,3 +126,4 @@ class CycleGAN225Model(BaseModel):
         self.optimizer_D.zero_grad()
         self.backward_D()
         self.optimizer_D.step()
+
